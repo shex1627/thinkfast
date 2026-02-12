@@ -176,6 +176,7 @@ def score_explanation(
 - **Prompt given**: "{prompt}"
 - **Topic**: {topic}
 - **Target audience**: {audience}
+  ⚠️ IMPORTANT: The explanation must be tailored specifically for "{audience}". Evaluate clarity and appropriateness based on this exact audience persona.
 - **Time allowed**: {timer_duration} seconds ({time_context})
 - **Time used**: {time_used} seconds
 - **Word count**: {word_count} words
@@ -194,7 +195,7 @@ def score_explanation(
 - Judge completeness relative to the time constraint - shorter times should NOT be penalized for brevity
 
 **Scoring Dimensions**:
-1. **Clarity**: Is it understandable for the target audience?
+1. **Clarity**: Is it understandable specifically for "{audience}"? Consider the vocabulary, examples, and analogies appropriate for this exact persona.
 2. **Accuracy**: Are the core concepts technically correct?
 3. **Structure**: Is there logical flow (even if brief)?
 4. **Completeness**: Does it cover what's reasonable given {timer_duration} seconds?
