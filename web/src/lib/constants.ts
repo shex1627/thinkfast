@@ -128,6 +128,8 @@ export const PRESET_TOPICS: Topic[] = [
   { id: "economics", name: "Economics", category: "humanities" },
 ];
 
+export const MAX_PERSONA_LENGTH = 50;
+
 export const CATEGORY_COLORS: Record<TopicCategory, string> = {
   technology: "bg-blue-100 text-blue-800 border-blue-200",
   science: "bg-purple-100 text-purple-800 border-purple-200",

@@ -22,8 +22,28 @@ export function buildScoringPrompt(params: ScoringPromptParams): string {
     timeUsed,
   } = params;
 
-  const audienceDesc = AUDIENCE_LABELS[audience];
+  const audienceDesc = AUDIENCE_LABELS[audience] || audience;
   const wordCount = explanation.split(/\s+/).filter(Boolean).length;
+
+  // Time-based expectations (ported from Streamlit POC)
+  let timeContext: string;
+  let completenessNote: string;
+  if (timerDuration <= 60) {
+    timeContext =
+      "very short time (≤60s) - expect bullet points or a brief paragraph covering key ideas only";
+    completenessNote =
+      "For this short timeframe, completeness means hitting 2-3 key points, not exhaustive coverage";
+  } else if (timerDuration <= 120) {
+    timeContext =
+      "moderate time (60-120s) - expect 1-2 paragraphs with main concepts and an example";
+    completenessNote =
+      "Should cover main concepts with at least one concrete example or analogy";
+  } else {
+    timeContext =
+      "extended time (>120s) - expect well-developed explanation with examples, nuance, and structure";
+    completenessNote =
+      "Should provide thorough coverage with examples, context, and possibly counterexamples";
+  }
 
   return `You are an expert communication coach and subject matter expert in "${topic}". Evaluate how well someone explained a concept under time pressure.
 
@@ -31,7 +51,7 @@ export function buildScoringPrompt(params: ScoringPromptParams): string {
 - **Prompt given**: "${prompt}"
 - **Target audience**: ${audienceDesc}
 - **Difficulty level**: ${difficulty}
-- **Time allowed**: ${timerDuration} seconds
+- **Time allowed**: ${timerDuration} seconds (${timeContext})
 - **Time used**: ${timeUsed} seconds
 - **Word count**: ${wordCount} words
 
@@ -40,15 +60,20 @@ export function buildScoringPrompt(params: ScoringPromptParams): string {
 ${explanation}
 """
 
-## Task
-Score this explanation on 5 dimensions (1-10 each). Be fair but constructive. Account for time pressure (${timerDuration}s) — minor typos or incomplete endings are expected.
+## Evaluation Guidelines
 
-### Dimensions
-1. **Clarity** (1-10): Clear and understandable for ${audienceDesc}? Avoids unnecessary jargon?
-2. **Accuracy** (1-10): Factually correct? Appropriate depth for "${difficulty}" level?
-3. **Structure** (1-10): Logical flow? Clear beginning, middle, end?
-4. **Completeness** (1-10): Key points covered given the time constraint?
-5. **Conciseness** (1-10): Efficient communication? No unnecessary repetition?
+**Time-Adjusted Expectations**:
+- ${completenessNote}
+- Minor typos, grammar issues, or abrupt endings are acceptable given time pressure
+- Prioritize clarity and accuracy over polish
+- Judge completeness relative to the time constraint - shorter times should NOT be penalized for brevity
+
+**Scoring Dimensions**:
+1. **Clarity** (1-10): Is it understandable for the target audience?
+2. **Accuracy** (1-10): Are the core concepts technically correct?
+3. **Structure** (1-10): Is there logical flow (even if brief)?
+4. **Completeness** (1-10): Does it cover what's reasonable given ${timerDuration} seconds?
+5. **Conciseness** (1-10): Efficient use of limited time?
 
 ### Overall
 Weighted: Clarity 25%, Accuracy 25%, Structure 20%, Completeness 15%, Conciseness 15%.

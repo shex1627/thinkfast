@@ -5,7 +5,8 @@ import { useTimer } from "@/hooks/useTimer";
 import { useScoring } from "@/hooks/useScoring";
 import { useAttempts } from "@/hooks/useAttempts";
 import { storage } from "@/lib/storage";
-import { PRESET_TOPICS, TIMER_PRESETS, DEFAULT_TIMER, TOPIC_CONCEPTS, CATEGORY_COLORS } from "@/lib/constants";
+import { PRESET_TOPICS, TIMER_PRESETS, DEFAULT_TIMER, TOPIC_CONCEPTS, CATEGORY_COLORS, MAX_PERSONA_LENGTH } from "@/lib/constants";
+import { sanitizePersona } from "@/lib/persona";
 import { generatePrompt } from "@/lib/prompt-generator";
 import { generateId, formatTime, wordCount, scoreColor, scoreColorText, gradeColor, formatTimerLabel } from "@/lib/utils";
 import type { Prompt, ScoreResult, PracticePhase, Topic } from "@/lib/types";
@@ -22,6 +23,7 @@ export default function PracticePage() {
   const [explanation, setExplanation] = useState("");
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
+  const [customPersona, setCustomPersona] = useState("");
 
   const timer = useTimer(timerDuration);
   const { isScoring, error: scoringError, requestScore } = useScoring();
@@ -75,7 +77,7 @@ export default function PracticePage() {
     const topic =
       activeTopics[Math.floor(Math.random() * activeTopics.length)];
     setCurrentTopic(topic);
-    setPrompt(generatePrompt(topic));
+    setPrompt(generatePrompt(topic, "intermediate", customPersona));
     setExplanation("");
     setScoreResult(null);
     setPhase("PROMPT_DISPLAY");
@@ -241,6 +243,32 @@ export default function PracticePage() {
               />
               <span className="text-sm text-muted">10–600 seconds</span>
             </div>
+          </div>
+
+          {/* Custom Persona */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-3">Audience / Persona</h2>
+            <p className="text-sm text-muted mb-2">
+              Leave blank for a random audience, or define your own.
+            </p>
+            <input
+              type="text"
+              value={customPersona}
+              onChange={(e) => setCustomPersona(e.target.value)}
+              maxLength={MAX_PERSONA_LENGTH}
+              placeholder="e.g., a curious teenager"
+              className="w-full px-4 py-2 rounded-lg bg-card border border-card-border text-foreground placeholder-muted focus:outline-none focus:border-accent"
+            />
+            {customPersona && (
+              <p className="text-xs text-muted mt-1">
+                {sanitizePersona(customPersona) !== customPersona.trim().slice(0, MAX_PERSONA_LENGTH) ? (
+                  <span className="text-yellow-400">Some characters were filtered for security. </span>
+                ) : null}
+                {sanitizePersona(customPersona) && (
+                  <span>Will use: <span className="text-foreground">{sanitizePersona(customPersona)}</span></span>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Start Button */}

@@ -1,6 +1,7 @@
 import { AudienceType, DifficultyLevel, Prompt } from "./types";
 import { TOPIC_CONCEPTS, AUDIENCE_LABELS } from "./constants";
 import { generateId } from "./utils";
+import { sanitizePersona } from "./persona";
 
 const TEMPLATES = [
   "Explain {concept} to {audience}.",
@@ -19,16 +20,26 @@ function randomChoice<T>(arr: T[]): T {
 
 export function generatePrompt(
   topic: string,
-  difficulty: DifficultyLevel = "intermediate"
+  difficulty: DifficultyLevel = "intermediate",
+  customPersona?: string
 ): Prompt {
   const concepts = TOPIC_CONCEPTS[topic];
   const concept = concepts
     ? randomChoice(concepts)
     : `a key concept from ${topic}`;
 
-  const audienceKeys = Object.keys(AUDIENCE_LABELS) as AudienceType[];
-  const audience = randomChoice(audienceKeys);
-  const audienceLabel = AUDIENCE_LABELS[audience];
+  let audience: AudienceType;
+  let audienceLabel: string;
+
+  const sanitized = customPersona ? sanitizePersona(customPersona) : "";
+  if (sanitized) {
+    audience = "non-technical"; // fallback type for custom personas
+    audienceLabel = sanitized;
+  } else {
+    const audienceKeys = Object.keys(AUDIENCE_LABELS) as AudienceType[];
+    audience = randomChoice(audienceKeys);
+    audienceLabel = AUDIENCE_LABELS[audience];
+  }
 
   const template = randomChoice(TEMPLATES);
   const text = template
