@@ -254,6 +254,7 @@ defaults = {
     "history": [],
     "selected_topics": [],
     "custom_topics": [],
+    "custom_persona": "",
     "api_key": ENV_API_KEY,
 }
 for k, v in defaults.items():
@@ -302,12 +303,11 @@ with st.sidebar:
 
     custom_persona = st.text_input(
         "Custom persona (optional)",
+        value=st.session_state.custom_persona,
         max_chars=MAX_PERSONA_LENGTH,
         placeholder="e.g., a curious teenager",
         help=f"Define who you're explaining to. Max {MAX_PERSONA_LENGTH} chars. Leave blank for random default personas."
     )
-    if "custom_persona" not in st.session_state:
-        st.session_state.custom_persona = ""
     st.session_state.custom_persona = custom_persona
 
     if custom_persona:

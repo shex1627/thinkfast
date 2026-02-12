@@ -36,6 +36,8 @@ export default function PracticePage() {
     if (saved.length) setCustomTopics(saved);
     const savedTimer = storage.getTimerDuration();
     if (savedTimer) setTimerDuration(savedTimer);
+    const savedPersona = storage.getCustomPersona();
+    if (savedPersona) setCustomPersona(savedPersona);
   }, []);
 
   // Auto-submit when timer expires
@@ -254,7 +256,11 @@ export default function PracticePage() {
             <input
               type="text"
               value={customPersona}
-              onChange={(e) => setCustomPersona(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCustomPersona(value);
+                storage.saveCustomPersona(value);
+              }}
               maxLength={MAX_PERSONA_LENGTH}
               placeholder="e.g., a curious teenager"
               className="w-full px-4 py-2 rounded-lg bg-card border border-card-border text-foreground placeholder-muted focus:outline-none focus:border-accent"

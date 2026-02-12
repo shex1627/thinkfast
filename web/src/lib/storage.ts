@@ -3,6 +3,7 @@ import { Attempt } from "./types";
 const ATTEMPTS_KEY = "thinkfast_attempts";
 const TOPICS_KEY = "thinkfast_custom_topics";
 const TIMER_KEY = "thinkfast_timer";
+const PERSONA_KEY = "thinkfast_custom_persona";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -52,5 +53,18 @@ export const storage = {
 
   saveTimerDuration(duration: number): void {
     localStorage.setItem(TIMER_KEY, duration.toString());
+  },
+
+  getCustomPersona(): string {
+    if (!isBrowser()) return "";
+    return localStorage.getItem(PERSONA_KEY) || "";
+  },
+
+  saveCustomPersona(persona: string): void {
+    if (persona) {
+      localStorage.setItem(PERSONA_KEY, persona);
+    } else {
+      localStorage.removeItem(PERSONA_KEY);
+    }
   },
 };
