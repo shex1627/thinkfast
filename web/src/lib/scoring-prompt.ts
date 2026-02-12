@@ -50,6 +50,7 @@ export function buildScoringPrompt(params: ScoringPromptParams): string {
 ## Context
 - **Prompt given**: "${prompt}"
 - **Target audience**: ${audienceDesc}
+  ⚠️ IMPORTANT: The explanation must be tailored specifically for "${audienceDesc}". Evaluate clarity and appropriateness based on this exact audience persona.
 - **Difficulty level**: ${difficulty}
 - **Time allowed**: ${timerDuration} seconds (${timeContext})
 - **Time used**: ${timeUsed} seconds
@@ -69,7 +70,7 @@ ${explanation}
 - Judge completeness relative to the time constraint - shorter times should NOT be penalized for brevity
 
 **Scoring Dimensions**:
-1. **Clarity** (1-10): Is it understandable for the target audience?
+1. **Clarity** (1-10): Is it understandable specifically for "${audienceDesc}"? Consider the vocabulary, examples, and analogies appropriate for this exact persona.
 2. **Accuracy** (1-10): Are the core concepts technically correct?
 3. **Structure** (1-10): Is there logical flow (even if brief)?
 4. **Completeness** (1-10): Does it cover what's reasonable given ${timerDuration} seconds?
