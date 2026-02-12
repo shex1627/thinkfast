@@ -1,11 +1,10 @@
-import { AudienceType, DifficultyLevel } from "./types";
-import { AUDIENCE_LABELS } from "./constants";
+import { DifficultyLevel } from "./types";
 
 interface ScoringPromptParams {
   prompt: string;
   explanation: string;
   topic: string;
-  audience: AudienceType;
+  audience: string;  // Allow custom personas (string instead of AudienceType enum)
   difficulty: DifficultyLevel;
   timerDuration: number;
   timeUsed: number;
@@ -22,7 +21,8 @@ export function buildScoringPrompt(params: ScoringPromptParams): string {
     timeUsed,
   } = params;
 
-  const audienceDesc = AUDIENCE_LABELS[audience] || audience;
+  // audience is now a string (could be custom persona or default label)
+  const audienceDesc = audience;
   const wordCount = explanation.split(/\s+/).filter(Boolean).length;
 
   // Time-based expectations (ported from Streamlit POC)

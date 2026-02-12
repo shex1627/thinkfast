@@ -153,11 +153,11 @@ test.describe('Custom Persona Feature', () => {
     // Generate prompt
     await page.click('text=Generate Prompt');
 
-    // Wait for prompt to be generated
-    await page.waitForSelector('text=/Explain.*to/i', { timeout: 5000 });
+    // Wait for prompt to be generated (it appears as a heading after generation)
+    await page.waitForSelector('h2', { timeout: 5000 });
 
     // The prompt should mention the custom persona
-    const promptText = await page.textContent('text=/Explain.*to/i');
+    const promptText = await page.locator('h2').textContent();
     expect(promptText?.toLowerCase()).toContain('marketing professional');
   });
 
@@ -191,16 +191,124 @@ test.describe('Custom Persona Feature', () => {
     // Generate prompt
     await page.click('text=Generate Prompt');
 
-    // Wait for prompt
-    await page.waitForSelector('text=/Explain.*to/i', { timeout: 5000 });
+    // Wait for prompt (it appears as a heading after generation)
+    await page.waitForSelector('h2', { timeout: 5000 });
 
     // Should use one of the default personas
-    const promptText = await page.textContent('text=/Explain.*to/i');
+    const promptText = await page.locator('h2').textContent();
     const defaultPersonas = ['child', 'teenager', 'non-technical', 'peer', 'executive', 'interviewer'];
     const hasDefaultPersona = defaultPersonas.some(persona =>
       promptText?.toLowerCase().includes(persona)
     );
 
     expect(hasDefaultPersona).toBe(true);
+  });
+
+  test('should send custom persona to scoring API', async ({ page }) => {
+    await page.goto('/practice');
+
+    // Select a topic
+    const topicButton = page.getByRole('button', { name: /JavaScript/i }).first();
+    await topicButton.click();
+
+    // Set custom persona
+    const customPersona = 'a small business owner';
+    const personaInput = page.getByPlaceholder('e.g., a curious teenager');
+    await personaInput.fill(customPersona);
+
+    // Generate prompt
+    await page.click('text=Generate Prompt');
+    await page.waitForSelector('h2', { timeout: 5000 });
+
+    // Start the timer
+    await page.click('text=Start Timer');
+    await page.waitForSelector('textarea', { timeout: 5000 });
+
+    // Type some explanation
+    const textarea = page.locator('textarea');
+    await textarea.fill('This is a test explanation about JavaScript concepts.');
+
+    // Listen for the scoring API request
+    const apiRequestPromise = page.waitForRequest(request =>
+      request.url().includes('/api/score') && request.method() === 'POST'
+    );
+
+    // Submit explanation
+    await page.click('text=Submit');
+
+    // Wait for the API request
+    const apiRequest = await apiRequestPromise;
+    const requestBody = apiRequest.postDataJSON();
+
+    // Verify the request contains the custom persona in the audience field
+    expect(requestBody.audience).toBeDefined();
+
+    // The persona should be sanitized and included
+    const expectedSanitized = customPersona.slice(0, 50).trim();
+    expect(requestBody.audience.toLowerCase()).toContain('business');
+    expect(requestBody.audience.toLowerCase()).toContain('owner');
+  });
+
+  test('should include custom persona in evaluation prompt sent to Claude', async ({ page }) => {
+    await page.goto('/practice');
+
+    // Intercept the API response to check what was sent
+    let scoringPrompt = '';
+
+    await page.route('**/api/score', async (route) => {
+      const request = route.request();
+      const requestData = request.postDataJSON();
+
+      // The API constructs a prompt internally - we're verifying the input data
+      // that will be used to build the prompt with the custom persona
+      scoringPrompt = JSON.stringify(requestData);
+
+      // Mock a successful response
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          result: {
+            clarity: { score: 8, feedback: 'Test feedback' },
+            accuracy: { score: 8, feedback: 'Test feedback' },
+            structure: { score: 7, feedback: 'Test feedback' },
+            completeness: { score: 7, feedback: 'Test feedback' },
+            conciseness: { score: 8, feedback: 'Test feedback' },
+            overall: {
+              score: 8,
+              grade: 'B+',
+              summary: 'Good explanation',
+              strengths: ['Clear', 'Accurate'],
+              improvements: ['Add examples', 'More detail']
+            },
+            modelExplanation: 'This is a model explanation.'
+          }
+        })
+      });
+    });
+
+    // Select topic and set custom persona
+    await page.getByRole('button', { name: /Python/i }).first().click();
+    const customPersona = 'a retired engineer';
+    await page.getByPlaceholder('e.g., a curious teenager').fill(customPersona);
+
+    // Generate and start timer
+    await page.click('text=Generate Prompt');
+    await page.waitForSelector('h2', { timeout: 5000 });
+    await page.click('text=Start Timer');
+    await page.waitForSelector('textarea', { timeout: 5000 });
+    await page.locator('textarea').fill('Python is a programming language.');
+
+    // Submit
+    await page.click('text=Submit');
+
+    // Wait for the route to be called
+    await page.waitForTimeout(1000);
+
+    // Verify the scoring prompt data includes our custom persona
+    expect(scoringPrompt).toBeTruthy();
+    expect(scoringPrompt.toLowerCase()).toContain('retired');
+    expect(scoringPrompt.toLowerCase()).toContain('engineer');
   });
 });

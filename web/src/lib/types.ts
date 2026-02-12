@@ -27,7 +27,8 @@ export interface Prompt {
   text: string;
   topic: string;
   concept: string;
-  audience: AudienceType;
+  audience: AudienceType;  // For backwards compatibility
+  audienceLabel: string;   // The actual persona string (custom or default label)
   difficulty: DifficultyLevel;
 }
 
@@ -69,7 +70,7 @@ export interface ScoreRequest {
   prompt: string;
   explanation: string;
   topic: string;
-  audience: AudienceType;
+  audience: string;  // Allow custom personas
   difficulty: DifficultyLevel;
   timerDuration: number;
   timeUsed: number;

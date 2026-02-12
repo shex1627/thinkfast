@@ -107,7 +107,7 @@ export default function PracticePage() {
       prompt: prompt.text,
       explanation: explanation.trim(),
       topic: currentTopic,
-      audience: prompt.audience,
+      audience: prompt.audienceLabel,  // Use audienceLabel to include custom personas
       difficulty: prompt.difficulty,
       timerDuration,
       timeUsed,

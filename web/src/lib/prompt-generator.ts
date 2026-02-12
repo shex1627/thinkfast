@@ -52,6 +52,7 @@ export function generatePrompt(
     topic,
     concept,
     audience,
+    audienceLabel,  // This contains the custom persona or default label
     difficulty,
   };
 }
