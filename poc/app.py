@@ -78,6 +78,8 @@ AUDIENCES = {
     "a business executive": "executive",
 }
 
+MAX_PERSONA_LENGTH = 50  # Character limit for custom persona to prevent prompt injection
+
 PROMPT_TEMPLATES = [
     "Explain {concept} to {audience}.",
     "What is {concept} and why does it matter? Explain for {audience}.",
@@ -97,7 +99,26 @@ TIMER_OPTIONS = {
 }
 
 
-def generate_prompt(topic: str, custom_concept: str | None = None) -> tuple[str, str, str]:
+def sanitize_persona(persona: str) -> str:
+    """Sanitize and validate custom persona input to prevent prompt injection."""
+    if not persona:
+        return ""
+
+    # Trim to max length
+    persona = persona[:MAX_PERSONA_LENGTH].strip()
+
+    # Remove special characters that could be used for injection
+    # Allow only letters, numbers, spaces, hyphens, and basic punctuation
+    allowed_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -,.'")
+    persona = "".join(c for c in persona if c in allowed_chars)
+
+    # Remove any newlines or control characters
+    persona = " ".join(persona.split())
+
+    return persona
+
+
+def generate_prompt(topic: str, custom_concept: str | None = None, custom_persona: str | None = None) -> tuple[str, str, str]:
     """Generate a practice prompt. Returns (full_prompt, concept, audience_label)."""
     if custom_concept:
         concept = custom_concept
@@ -106,7 +127,16 @@ def generate_prompt(topic: str, custom_concept: str | None = None) -> tuple[str,
     else:
         concept = f"a key concept from {topic}"
 
-    audience_label = random.choice(list(AUDIENCES.keys()))
+    # Use custom persona if provided and valid, otherwise random
+    if custom_persona:
+        sanitized = sanitize_persona(custom_persona)
+        if sanitized:
+            audience_label = sanitized
+        else:
+            audience_label = random.choice(list(AUDIENCES.keys()))
+    else:
+        audience_label = random.choice(list(AUDIENCES.keys()))
+
     template = random.choice(PROMPT_TEMPLATES)
     prompt = template.format(concept=concept, audience=audience_label)
     return prompt, concept, audience_label
@@ -129,13 +159,24 @@ def score_explanation(
     client = anthropic.Anthropic(api_key=api_key)
     word_count = len(explanation.split())
 
+    # Determine time-based expectations
+    if timer_duration <= 60:
+        time_context = "very short time (≤60s) - expect bullet points or a brief paragraph covering key ideas only"
+        completeness_note = "For this short timeframe, completeness means hitting 2-3 key points, not exhaustive coverage"
+    elif timer_duration <= 120:
+        time_context = "moderate time (60-120s) - expect 1-2 paragraphs with main concepts and an example"
+        completeness_note = "Should cover main concepts with at least one concrete example or analogy"
+    else:
+        time_context = "extended time (>120s) - expect well-developed explanation with examples, nuance, and structure"
+        completeness_note = "Should provide thorough coverage with examples, context, and possibly counterexamples"
+
     scoring_prompt = f"""You are an expert communication coach. Evaluate how well someone explained a concept under time pressure.
 
 ## Context
 - **Prompt given**: "{prompt}"
 - **Topic**: {topic}
 - **Target audience**: {audience}
-- **Time allowed**: {timer_duration} seconds
+- **Time allowed**: {timer_duration} seconds ({time_context})
 - **Time used**: {time_used} seconds
 - **Word count**: {word_count} words
 
@@ -144,8 +185,20 @@ def score_explanation(
 {explanation}
 \"\"\"
 
-## Task
-Score this explanation on 5 dimensions (1-10 each). Be fair but constructive. Account for time pressure — minor typos or incomplete endings are expected.
+## Evaluation Guidelines
+
+**Time-Adjusted Expectations**:
+- {completeness_note}
+- Minor typos, grammar issues, or abrupt endings are acceptable given time pressure
+- Prioritize clarity and accuracy over polish
+- Judge completeness relative to the time constraint - shorter times should NOT be penalized for brevity
+
+**Scoring Dimensions**:
+1. **Clarity**: Is it understandable for the target audience?
+2. **Accuracy**: Are the core concepts technically correct?
+3. **Structure**: Is there logical flow (even if brief)?
+4. **Completeness**: Does it cover what's reasonable given {timer_duration} seconds?
+5. **Conciseness**: Efficient use of limited time?
 
 Respond with ONLY this JSON (no markdown fences, no preamble):
 
@@ -227,8 +280,11 @@ with st.sidebar:
         "Pick topics you know",
         options=list(TOPIC_CONCEPTS.keys()),
         default=st.session_state.selected_topics,
+        key="topic_multiselect",
     )
-    st.session_state.selected_topics = selected
+    # Only update if changed to avoid unnecessary reruns
+    if selected != st.session_state.selected_topics:
+        st.session_state.selected_topics = selected
 
     custom = st.text_input("Add a custom topic")
     if custom and st.button("Add Topic"):
@@ -238,6 +294,27 @@ with st.sidebar:
 
     if st.session_state.custom_topics:
         st.caption(f"Custom: {', '.join(st.session_state.custom_topics)}")
+
+    st.divider()
+    st.subheader("Audience / Persona")
+    st.caption(f"Default personas: {', '.join(list(AUDIENCES.keys())[:3])}, ...")
+
+    custom_persona = st.text_input(
+        "Custom persona (optional)",
+        max_chars=MAX_PERSONA_LENGTH,
+        placeholder="e.g., a curious teenager",
+        help=f"Define who you're explaining to. Max {MAX_PERSONA_LENGTH} chars. Leave blank for random default personas."
+    )
+    if "custom_persona" not in st.session_state:
+        st.session_state.custom_persona = ""
+    st.session_state.custom_persona = custom_persona
+
+    if custom_persona:
+        sanitized = sanitize_persona(custom_persona)
+        if sanitized != custom_persona.strip()[:MAX_PERSONA_LENGTH]:
+            st.caption("⚠️ Some characters were filtered for security")
+        if sanitized:
+            st.caption(f"✓ Will use: **{sanitized}**")
 
     st.divider()
     if st.session_state.history:
@@ -269,7 +346,7 @@ if st.session_state.phase == "setup":
 
     if st.button("Generate Prompt", type="primary", use_container_width=True):
         topic = random.choice(all_topics)
-        prompt, concept, audience = generate_prompt(topic)
+        prompt, concept, audience = generate_prompt(topic, custom_persona=st.session_state.get("custom_persona", ""))
         st.session_state.prompt = prompt
         st.session_state.concept = concept
         st.session_state.audience = audience
@@ -424,7 +501,7 @@ elif st.session_state.phase == "scored":
     with col1:
         if st.button("Try Again (Same Topic)", use_container_width=True):
             topic = st.session_state.current_topic
-            prompt, concept, audience = generate_prompt(topic)
+            prompt, concept, audience = generate_prompt(topic, custom_persona=st.session_state.get("custom_persona", ""))
             st.session_state.prompt = prompt
             st.session_state.concept = concept
             st.session_state.audience = audience
