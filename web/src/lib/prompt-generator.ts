@@ -4,14 +4,14 @@ import { generateId } from "./utils";
 import { sanitizePersona } from "./persona";
 
 const TEMPLATES = [
-  "Explain {concept} to {audience}.",
-  "What is {concept} and why does it matter? Explain for {audience}.",
-  "Describe how {concept} works to {audience}.",
-  "Summarize {concept} in a way that {audience} would understand.",
-  "What are the most important things to know about {concept}? Explain for {audience}.",
-  "Walk through {concept} step by step for {audience}.",
-  "If {audience} asked you about {concept}, what would you say?",
-  "What common misconceptions exist about {concept}? Explain for {audience}.",
+  "[{topic}] Explain {concept} to {audience}.",
+  "[{topic}] What is {concept} and why does it matter? Explain for {audience}.",
+  "[{topic}] Describe how {concept} works to {audience}.",
+  "[{topic}] Summarize {concept} in a way that {audience} would understand.",
+  "[{topic}] What are the most important things to know about {concept}? Explain for {audience}.",
+  "[{topic}] Walk through {concept} step by step for {audience}.",
+  "[{topic}] If {audience} asked you about {concept}, what would you say?",
+  "[{topic}] What common misconceptions exist about {concept}? Explain for {audience}.",
 ];
 
 function randomChoice<T>(arr: T[]): T {
@@ -43,6 +43,7 @@ export function generatePrompt(
 
   const template = randomChoice(TEMPLATES);
   const text = template
+    .replace(/\{topic\}/g, topic)
     .replace(/\{concept\}/g, concept)
     .replace(/\{audience\}/g, audienceLabel);
 

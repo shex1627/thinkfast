@@ -36,6 +36,7 @@ TOPIC_CONCEPTS = {
         "web workers", "service workers", "local storage vs session storage", "cookies",
         "regular expressions", "object vs Map", "array vs Set", "WeakMap and WeakSet",
         "symbols", "proxies and reflect", "generators and iterators",
+        "garbage collection in JavaScript",
     ],
     "Python": [
         "decorators", "generators", "list comprehensions", "the GIL",
@@ -48,42 +49,67 @@ TOPIC_CONCEPTS = {
         "modules and packages", "the import system", "pip and package management",
         "type hints and annotations", "dataclasses", "named tuples", "function closures",
         "mutable vs immutable types", "shallow vs deep copy", "the is vs == operators",
-        "pass by reference vs pass by value",
+        "pass by reference vs pass by value", "Python's memory management", "slots",
     ],
     "Machine Learning": [
         "gradient descent", "overfitting", "neural networks",
         "supervised vs unsupervised learning", "backpropagation",
         "bias-variance tradeoff", "decision trees", "cross-validation",
+        "regularization (L1/L2)", "feature engineering",
+        "ensemble methods (bagging vs boosting)", "precision vs recall",
+        "ROC curves", "k-nearest neighbors", "dimensionality reduction (PCA)", "transfer learning",
     ],
     "Web Development": [
         "REST APIs", "CORS", "cookies vs sessions", "DNS resolution",
         "HTTPS/TLS", "caching strategies", "WebSockets", "responsive design",
+        "the critical rendering path", "server-side rendering vs client-side rendering",
+        "OAuth and authentication flows", "Content Security Policy",
+        "progressive web apps", "service workers", "web accessibility (WCAG)", "GraphQL vs REST",
     ],
     "Databases": [
-        "SQL joins", "indexing", "ACID properties", "normalization",
-        "NoSQL vs SQL", "transactions", "connection pooling", "sharding",
+        "SQL joins", "indexing (in databases)", "ACID properties", "normalization",
+        "NoSQL vs SQL", "transactions (in databases)", "connection pooling", "sharding",
+        "database replication", "CAP theorem", "query optimization", "stored procedures",
+        "database migrations", "eventual consistency", "write-ahead logging", "materialized views",
     ],
     "Operating Systems": [
-        "processes vs threads", "virtual memory", "deadlocks", "file systems",
-        "context switching", "page replacement algorithms", "system calls", "scheduling",
+        "processes vs threads", "virtual memory (in OS)", "deadlocks", "file systems",
+        "context switching", "scheduling algorithms (in OS)", "system calls", "page replacement (in OS)",
+        "the heap (OS memory management)", "the stack (OS call stack)",
+        "inter-process communication", "semaphores and mutexes",
+        "memory-mapped I/O", "kernel space vs user space", "paging vs segmentation",
+        "interrupts and interrupt handling",
     ],
     "Networking": [
-        "TCP vs UDP", "HTTP/2", "load balancing", "CDNs",
+        "TCP vs UDP", "HTTP/2", "load balancing (in networking)", "CDNs",
         "the OSI model", "subnetting", "packet routing", "firewalls",
+        "NAT (Network Address Translation)", "ARP (Address Resolution Protocol)",
+        "BGP routing", "DHCP", "TCP three-way handshake",
+        "HTTP status codes", "TLS handshake", "DNS records (A, CNAME, MX)",
     ],
     "Data Structures": [
-        "hash tables", "binary trees", "linked lists vs arrays",
-        "graphs", "stacks and queues", "heaps", "tries", "B-trees",
+        "hash tables", "binary search trees", "linked lists vs arrays",
+        "graphs (in data structures)", "stacks and queues",
+        "heaps (priority queue data structure)", "tries (prefix trees)", "B-trees",
+        "red-black trees", "bloom filters", "skip lists",
+        "adjacency list vs adjacency matrix", "disjoint set (union-find)",
+        "circular buffers", "LRU cache implementation", "amortized time complexity",
     ],
     "Physics": [
         "gravity", "quantum entanglement", "thermodynamics",
-        "special relativity", "electromagnetic waves", "entropy",
+        "special relativity", "electromagnetic waves", "entropy (in physics)",
         "Heisenberg's uncertainty principle", "wave-particle duality",
+        "conservation of energy", "Schrödinger's equation", "the photoelectric effect",
+        "nuclear fission vs fusion", "the Doppler effect", "Ohm's law",
+        "centripetal vs centrifugal force", "the Standard Model of particle physics",
     ],
     "Economics": [
         "supply and demand", "inflation", "opportunity cost",
         "game theory", "monetary policy", "comparative advantage",
         "market equilibrium", "externalities",
+        "GDP and how it's measured", "the Phillips curve", "moral hazard",
+        "adverse selection", "fiscal policy vs monetary policy",
+        "the tragedy of the commons", "price elasticity", "Keynesian vs classical economics",
     ],
 }
 
@@ -98,12 +124,12 @@ AUDIENCES = {
 MAX_PERSONA_LENGTH = 50  # Character limit for custom persona to prevent prompt injection
 
 PROMPT_TEMPLATES = [
-    "Explain {concept} to {audience}.",
-    "What is {concept} and why does it matter? Explain for {audience}.",
-    "Describe how {concept} works to {audience}.",
-    "Summarize {concept} in a way that {audience} would understand.",
-    "What are the most important things to know about {concept}? Explain for {audience}.",
-    "Walk through {concept} step by step for {audience}.",
+    "[{topic}] Explain {concept} to {audience}.",
+    "[{topic}] What is {concept} and why does it matter? Explain for {audience}.",
+    "[{topic}] Describe how {concept} works to {audience}.",
+    "[{topic}] Summarize {concept} in a way that {audience} would understand.",
+    "[{topic}] What are the most important things to know about {concept}? Explain for {audience}.",
+    "[{topic}] Walk through {concept} step by step for {audience}.",
 ]
 
 TIMER_OPTIONS = {
@@ -155,7 +181,7 @@ def generate_prompt(topic: str, custom_concept: str | None = None, custom_person
         audience_label = random.choice(list(AUDIENCES.keys()))
 
     template = random.choice(PROMPT_TEMPLATES)
-    prompt = template.format(concept=concept, audience=audience_label)
+    prompt = template.format(topic=topic, concept=concept, audience=audience_label)
     return prompt, concept, audience_label
 
 
