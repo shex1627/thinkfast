@@ -58,6 +58,17 @@ TOPIC_CONCEPTS = {
         "regularization (L1/L2)", "feature engineering",
         "ensemble methods (bagging vs boosting)", "precision vs recall",
         "ROC curves", "k-nearest neighbors", "dimensionality reduction (PCA)", "transfer learning",
+        "transformer architecture and self-attention",
+        "vanishing and exploding gradients",
+        "BatchNorm vs LayerNorm",
+        "training, validation, and test data splits",
+        "batch vs mini-batch vs stochastic gradient descent",
+        "generative vs discriminative models",
+        "CNNs vs traditional neural networks",
+        "concept drift in production models",
+        "F1-score and when to optimize for precision vs recall",
+        "feature scaling (normalization vs standardization)",
+        "classification vs regression",
     ],
     "Web Development": [
         "REST APIs", "CORS", "cookies vs sessions", "DNS resolution",
@@ -65,6 +76,9 @@ TOPIC_CONCEPTS = {
         "the critical rendering path", "server-side rendering vs client-side rendering",
         "OAuth and authentication flows", "Content Security Policy",
         "progressive web apps", "service workers", "web accessibility (WCAG)", "GraphQL vs REST",
+        "rate limiting (token bucket, sliding window)",
+        "web crawlers (deduplication, politeness, distributed crawling)",
+        "real-time fraud detection in web systems",
     ],
     "Databases": [
         "SQL joins", "indexing (in databases)", "ACID properties", "normalization",
@@ -79,6 +93,8 @@ TOPIC_CONCEPTS = {
         "inter-process communication", "semaphores and mutexes",
         "memory-mapped I/O", "kernel space vs user space", "paging vs segmentation",
         "interrupts and interrupt handling",
+        "concurrency patterns (producer-consumer problem)",
+        "kernel optimization (loop unrolling, memory coalescing)",
     ],
     "Networking": [
         "TCP vs UDP", "HTTP/2", "load balancing (in networking)", "CDNs",
@@ -94,6 +110,39 @@ TOPIC_CONCEPTS = {
         "red-black trees", "bloom filters", "skip lists",
         "adjacency list vs adjacency matrix", "disjoint set (union-find)",
         "circular buffers", "LRU cache implementation", "amortized time complexity",
+        "SnapshotArray implementation", "KV store with versioning and transactions",
+    ],
+    "Generative AI": [
+        "RAG (retrieval-augmented generation)",
+        "vector databases and ANN search",
+        "LLM inference serving and optimization",
+        "PagedAttention and KV cache management",
+        "quantization (4-bit/8-bit) for model compression",
+        "agentic AI systems (Plan-Act-Observe loop)",
+        "tool calling and safety in AI agents",
+        "memory in multi-agent workflows",
+        "human-in-the-loop design for AI agents",
+        "prompt engineering techniques",
+        "RLHF (reinforcement learning from human feedback)",
+        "constitutional AI",
+        "embeddings and semantic search",
+        "text-to-image generation (diffusion models)",
+        "fine-tuning vs pre-training",
+        "knowledge distillation",
+        "tokenization in LLMs",
+        "context windows and attention limits",
+        "chain-of-thought prompting",
+        "few-shot vs zero-shot learning",
+        "hallucination in LLMs and mitigation strategies",
+        "guardrails for LLM outputs",
+        "model evaluation metrics (perplexity, BLEU, ROUGE)",
+        "ReAct prompting pattern",
+        "chunking strategies for RAG pipelines",
+        "cross-encoder reranking for retrieval",
+        "hybrid search (vector + BM25)",
+        "AI safety and alignment",
+        "model monitoring and drift detection",
+        "distributed training (data parallelism vs model parallelism)",
     ],
     "Physics": [
         "gravity", "quantum entanglement", "thermodynamics",
@@ -161,14 +210,18 @@ def sanitize_persona(persona: str) -> str:
     return persona
 
 
-def generate_prompt(topic: str, custom_concept: str | None = None, custom_persona: str | None = None) -> tuple[str, str, str]:
+def generate_prompt(topic: str, custom_concept: str | None = None, custom_persona: str | None = None, custom_concepts: dict | None = None) -> tuple[str, str, str]:
     """Generate a practice prompt. Returns (full_prompt, concept, audience_label)."""
     if custom_concept:
         concept = custom_concept
-    elif topic in TOPIC_CONCEPTS:
-        concept = random.choice(TOPIC_CONCEPTS[topic])
     else:
-        concept = f"a key concept from {topic}"
+        preset = TOPIC_CONCEPTS.get(topic, [])
+        extra = (custom_concepts or {}).get(topic, [])
+        all_concepts = preset + extra
+        if all_concepts:
+            concept = random.choice(all_concepts)
+        else:
+            concept = f"a key concept from {topic}"
 
     # Use custom persona if provided and valid, otherwise random
     if custom_persona:
@@ -297,6 +350,7 @@ defaults = {
     "history": [],
     "selected_topics": [],
     "custom_topics": [],
+    "custom_concepts": {},  # {topic_name: [concept1, concept2, ...]}
     "custom_persona": "",
     "api_key": ENV_API_KEY,
 }
@@ -339,6 +393,35 @@ with st.sidebar:
 
     if st.session_state.custom_topics:
         st.caption(f"Custom: {', '.join(st.session_state.custom_topics)}")
+
+    st.divider()
+    st.subheader("Custom Questions")
+    st.caption("Add your own concepts/questions to any topic.")
+    all_topic_names = list(TOPIC_CONCEPTS.keys()) + st.session_state.custom_topics
+    concept_topic = st.selectbox("Topic", options=all_topic_names, key="concept_topic_select")
+    concept_input = st.text_input("New question/concept", key="concept_input")
+    if concept_input and st.button("Add Concept"):
+        if concept_topic not in st.session_state.custom_concepts:
+            st.session_state.custom_concepts[concept_topic] = []
+        if concept_input not in st.session_state.custom_concepts[concept_topic]:
+            st.session_state.custom_concepts[concept_topic].append(concept_input)
+            st.rerun()
+
+    if concept_topic and st.session_state.custom_concepts.get(concept_topic):
+        st.caption(f"Your custom concepts for {concept_topic}:")
+        for i, c in enumerate(st.session_state.custom_concepts[concept_topic]):
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.text(c)
+            with col2:
+                if st.button("×", key=f"rm_concept_{concept_topic}_{i}"):
+                    st.session_state.custom_concepts[concept_topic].pop(i)
+                    st.rerun()
+
+    preset_count = len(TOPIC_CONCEPTS.get(concept_topic, [])) if concept_topic else 0
+    custom_count = len(st.session_state.custom_concepts.get(concept_topic, [])) if concept_topic else 0
+    if concept_topic:
+        st.caption(f"Total: {preset_count} preset + {custom_count} custom = {preset_count + custom_count}")
 
     st.divider()
     st.subheader("Audience / Persona")
@@ -390,7 +473,7 @@ if st.session_state.phase == "setup":
 
     if st.button("Generate Prompt", type="primary", use_container_width=True):
         topic = random.choice(all_topics)
-        prompt, concept, audience = generate_prompt(topic, custom_persona=st.session_state.get("custom_persona", ""))
+        prompt, concept, audience = generate_prompt(topic, custom_persona=st.session_state.get("custom_persona", ""), custom_concepts=st.session_state.custom_concepts)
         st.session_state.prompt = prompt
         st.session_state.concept = concept
         st.session_state.audience = audience
@@ -545,7 +628,7 @@ elif st.session_state.phase == "scored":
     with col1:
         if st.button("Try Again (Same Topic)", use_container_width=True):
             topic = st.session_state.current_topic
-            prompt, concept, audience = generate_prompt(topic, custom_persona=st.session_state.get("custom_persona", ""))
+            prompt, concept, audience = generate_prompt(topic, custom_persona=st.session_state.get("custom_persona", ""), custom_concepts=st.session_state.custom_concepts)
             st.session_state.prompt = prompt
             st.session_state.concept = concept
             st.session_state.audience = audience

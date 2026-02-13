@@ -24,6 +24,9 @@ export default function PracticePage() {
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
   const [customPersona, setCustomPersona] = useState("");
+  const [customConcepts, setCustomConcepts] = useState<Record<string, string[]>>({});
+  const [conceptInput, setConceptInput] = useState("");
+  const [editingConceptsTopic, setEditingConceptsTopic] = useState<string | null>(null);
 
   const timer = useTimer(timerDuration);
   const { isScoring, error: scoringError, requestScore } = useScoring();
@@ -38,6 +41,7 @@ export default function PracticePage() {
     if (savedTimer) setTimerDuration(savedTimer);
     const savedPersona = storage.getCustomPersona();
     if (savedPersona) setCustomPersona(savedPersona);
+    setCustomConcepts(storage.getCustomConcepts());
   }, []);
 
   // Auto-submit when timer expires
@@ -70,6 +74,25 @@ export default function PracticePage() {
     setCustomTopicInput("");
   };
 
+  const addConceptToTopic = (topic: string) => {
+    const concept = conceptInput.trim();
+    if (!concept) return;
+    storage.addCustomConcept(topic, concept);
+    setCustomConcepts(storage.getCustomConcepts());
+    setConceptInput("");
+  };
+
+  const removeConceptFromTopic = (topic: string, concept: string) => {
+    storage.removeCustomConcept(topic, concept);
+    setCustomConcepts(storage.getCustomConcepts());
+  };
+
+  const getConceptCount = (topicName: string) => {
+    const preset = TOPIC_CONCEPTS[topicName]?.length || 0;
+    const custom = customConcepts[topicName]?.length || 0;
+    return preset + custom;
+  };
+
   const handleTimerChange = (duration: number) => {
     setTimerDuration(duration);
     storage.saveTimerDuration(duration);
@@ -79,7 +102,7 @@ export default function PracticePage() {
     const topic =
       activeTopics[Math.floor(Math.random() * activeTopics.length)];
     setCurrentTopic(topic);
-    setPrompt(generatePrompt(topic, "intermediate", customPersona));
+    setPrompt(generatePrompt(topic, "intermediate", customPersona, customConcepts));
     setExplanation("");
     setScoreResult(null);
     setPhase("PROMPT_DISPLAY");
@@ -208,6 +231,90 @@ export default function PracticePage() {
             >
               Add
             </button>
+          </div>
+
+          {/* Custom Concepts per Topic */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-2">Questions per Topic</h2>
+            <p className="text-sm text-muted mb-3">
+              Click a topic to view and add custom questions/concepts.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[...PRESET_TOPICS.map(t => t.name), ...customTopics].map((topicName) => (
+                <button
+                  key={topicName}
+                  onClick={() => setEditingConceptsTopic(editingConceptsTopic === topicName ? null : topicName)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                    editingConceptsTopic === topicName
+                      ? "bg-accent text-white border-accent"
+                      : "bg-card border-card-border text-muted hover:border-accent"
+                  }`}
+                >
+                  {topicName} ({getConceptCount(topicName)})
+                </button>
+              ))}
+            </div>
+
+            {editingConceptsTopic && (
+              <div className="p-4 rounded-lg bg-card border border-card-border animate-fade-in">
+                <h3 className="font-medium mb-2">{editingConceptsTopic} — Concepts</h3>
+
+                {/* Add custom concept */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={conceptInput}
+                    onChange={(e) => setConceptInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addConceptToTopic(editingConceptsTopic)}
+                    placeholder="Add a custom question or concept..."
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-background border border-card-border text-foreground placeholder-muted text-sm focus:outline-none focus:border-accent"
+                  />
+                  <button
+                    onClick={() => addConceptToTopic(editingConceptsTopic)}
+                    disabled={!conceptInput.trim()}
+                    className="px-3 py-1.5 bg-accent text-white text-sm rounded-lg hover:bg-accent-light disabled:opacity-40 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Custom concepts list */}
+                {customConcepts[editingConceptsTopic]?.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs text-muted mb-1">Your custom concepts:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {customConcepts[editingConceptsTopic].map((concept) => (
+                        <span key={concept} className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent/10 text-accent text-xs rounded-full border border-accent/20">
+                          {concept}
+                          <button
+                            onClick={() => removeConceptFromTopic(editingConceptsTopic!, concept)}
+                            className="hover:text-red-400 transition-colors text-xs ml-0.5"
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset concepts (collapsed) */}
+                {TOPIC_CONCEPTS[editingConceptsTopic] && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted hover:text-foreground transition-colors">
+                      Preset concepts ({TOPIC_CONCEPTS[editingConceptsTopic].length})
+                    </summary>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {TOPIC_CONCEPTS[editingConceptsTopic].map((concept) => (
+                        <span key={concept} className="px-2 py-0.5 bg-card-border text-muted rounded-full">
+                          {concept}
+                        </span>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Timer Config */}

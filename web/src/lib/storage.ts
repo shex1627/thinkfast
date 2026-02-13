@@ -4,6 +4,7 @@ const ATTEMPTS_KEY = "thinkfast_attempts";
 const TOPICS_KEY = "thinkfast_custom_topics";
 const TIMER_KEY = "thinkfast_timer";
 const PERSONA_KEY = "thinkfast_custom_persona";
+const CUSTOM_CONCEPTS_KEY = "thinkfast_custom_concepts";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -65,6 +66,34 @@ export const storage = {
       localStorage.setItem(PERSONA_KEY, persona);
     } else {
       localStorage.removeItem(PERSONA_KEY);
+    }
+  },
+
+  getCustomConcepts(): Record<string, string[]> {
+    if (!isBrowser()) return {};
+    const raw = localStorage.getItem(CUSTOM_CONCEPTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  },
+
+  saveCustomConcepts(concepts: Record<string, string[]>): void {
+    localStorage.setItem(CUSTOM_CONCEPTS_KEY, JSON.stringify(concepts));
+  },
+
+  addCustomConcept(topic: string, concept: string): void {
+    const all = this.getCustomConcepts();
+    if (!all[topic]) all[topic] = [];
+    if (!all[topic].includes(concept)) {
+      all[topic].push(concept);
+      this.saveCustomConcepts(all);
+    }
+  },
+
+  removeCustomConcept(topic: string, concept: string): void {
+    const all = this.getCustomConcepts();
+    if (all[topic]) {
+      all[topic] = all[topic].filter((c) => c !== concept);
+      if (all[topic].length === 0) delete all[topic];
+      this.saveCustomConcepts(all);
     }
   },
 };

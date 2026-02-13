@@ -21,11 +21,14 @@ function randomChoice<T>(arr: T[]): T {
 export function generatePrompt(
   topic: string,
   difficulty: DifficultyLevel = "intermediate",
-  customPersona?: string
+  customPersona?: string,
+  customConcepts?: Record<string, string[]>
 ): Prompt {
-  const concepts = TOPIC_CONCEPTS[topic];
-  const concept = concepts
-    ? randomChoice(concepts)
+  const presetConcepts = TOPIC_CONCEPTS[topic] || [];
+  const extraConcepts = customConcepts?.[topic] || [];
+  const allConcepts = [...presetConcepts, ...extraConcepts];
+  const concept = allConcepts.length > 0
+    ? randomChoice(allConcepts)
     : `a key concept from ${topic}`;
 
   let audience: AudienceType;
