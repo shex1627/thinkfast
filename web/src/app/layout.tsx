@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ThinkFast",
+  title: "ExplainFast",
   description: "Practice explaining concepts clearly, under time pressure.",
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
             <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
               <a href="/" className="flex items-center gap-2">
                 <span className="text-2xl font-bold">
-                  <span className="text-accent-light">Think</span>Fast
+                  <span className="text-accent-light">Explain</span>Fast
                 </span>
               </a>
               <nav className="flex gap-4 text-sm">

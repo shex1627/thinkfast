@@ -2,7 +2,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
       <h1 className="text-5xl font-bold mb-4">
-        <span className="text-accent-light">Think</span>Fast
+        <span className="text-accent-light">Explain</span>Fast
       </h1>
       <p className="text-xl text-muted max-w-lg mb-8">
         Practice explaining concepts clearly, under time pressure. Get AI-powered
