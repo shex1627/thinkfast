@@ -273,8 +273,8 @@ def score_explanation(
 - **Topic**: {topic}
 - **Target audience**: {audience}
   ⚠️ IMPORTANT: The explanation must be tailored specifically for "{audience}". Evaluate clarity and appropriateness based on this exact audience persona.
-- **Time allowed**: {timer_duration} seconds ({time_context})
-- **Time used**: {time_used} seconds
+- **Total time budget**: {timer_duration} seconds ({time_context})
+- **Time the user actually spent**: {time_used} seconds out of {timer_duration} seconds ({timer_duration - time_used} seconds remaining when submitted)
 - **Word count**: {word_count} words
 
 ## The Explanation

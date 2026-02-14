@@ -52,8 +52,8 @@ export function buildScoringPrompt(params: ScoringPromptParams): string {
 - **Target audience**: ${audienceDesc}
   ⚠️ IMPORTANT: The explanation must be tailored specifically for "${audienceDesc}". Evaluate clarity and appropriateness based on this exact audience persona.
 - **Difficulty level**: ${difficulty}
-- **Time allowed**: ${timerDuration} seconds (${timeContext})
-- **Time used**: ${timeUsed} seconds
+- **Total time budget**: ${timerDuration} seconds (${timeContext})
+- **Time the user actually spent**: ${timeUsed} seconds out of ${timerDuration} seconds (${timerDuration - timeUsed} seconds remaining when submitted)
 - **Word count**: ${wordCount} words
 
 ## The Explanation
